@@ -1,0 +1,18 @@
+[
+  {
+    "id": 0,
+    "text": "L'intelligence artificielle est un domaine de l'informatique qui vise à créer des machines capables d'apprendre et de raisonner."
+  },
+  {
+    "id": 1,
+    "text": "Le machine learning est une sous-branche de l'IA qui permet aux algorithmes d'améliorer leurs performances à partir de données."
+  },
+  {
+    "id": 2,
+    "text": "Les réseaux de neurones convolutifs sont utilisés en vision par ordinateur."
+  },
+  {
+    "id": 3,
+    "text": "La cybersécurité protège les systèmes informatiques contre les attaques et les intrusions."
+  }
+]
