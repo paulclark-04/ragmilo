@@ -1,4 +1,0 @@
-L'intelligence artificielle est un domaine de l'informatique qui vise à créer des machines capables d'apprendre et de raisonner.
-Le machine learning est une sous-branche de l'IA qui permet aux algorithmes d'améliorer leurs performances à partir de données.
-Les réseaux de neurones convolutifs sont utilisés en vision par ordinateur.
-La cybersécurité protège les systèmes informatiques contre les attaques et les intrusions.
