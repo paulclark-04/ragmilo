@@ -124,7 +124,9 @@ Querying
 
 Web UI
 - Lancer l’API + front : `uvicorn server:app --reload`
-- Ouvrir `http://localhost:8000` : interface chat moderne (saisie question, filtres matière/enseignant/promo, affichage des sources et scores).
+- Ouvrir `http://localhost:8000` pour l’interface chat moderne (saisie question, filtres matière/enseignant/promo, affichage des sources et scores), ou `http://localhost:8000/file_manager.html` pour la gestion des fichiers.
+L’interface chat conserve les filtres dynamiques (matiere, sous_matiere, enseignant, promo, semestre) et les citations avec scores.
+Le gestionnaire de fichiers et le chat utilisent la même base (rag_database.db).
 - L’API REST (POST `/api/ask`) renvoie le même JSON que `demo.py`.
 
 Output
@@ -137,9 +139,62 @@ Notes
 - Gardez des PDF structurés (titres, sections) pour de meilleurs chunks.
 - Regénérez les indexes après chaque ajout/mise à jour de documents.
 - Pour switcher d’embedding (ex. bge-m3), passez `--embed-model` à l’ingestion puis relancez `demo.py` avec le même modèle.
+- Toujours exécuter file_manager.py avant server.py pour s’assurer que la base est accessible et cohérente.
+- sous_matiere devient un filtre standard dans toutes les requêtes de recherche et d’ingestion.
+- Lors de l’ajout d’un nouveau PDF, vérifier que la colonne chunk_count se met bien à jour (sinon recharger l’écran).
+- enhanced_ingest.py peut être utilisé manuellement pour debug ou ingestion en ligne de commande.
 
 Roadmap
 - Mettre en place un protocole de validation manuel (cas Milo réels, revue croisée),
 - Mettre en place une segmentation sémantique + regroupement par chapitres,
 - Préparer un mode d’ingestion incrémentale à chaud (sans rebuild complet),
 - Intégrer Milo (API locale) et instrumentation (latence, logs RAG).
+- Intégration d’un champ de recherche textuelle dans le gestionnaire de fichiers. (Pas pressé et pas indispensable)
+- Ajout d’un bouton “Ré-ingérer” pour retraiter un PDF déjà importé. (Non essentiel)
+- Statistiques avancées sur la taille moyenne des chunks et couverture des matières (Non essentiel)
+
+
+
+Nouveautés Base de Données & Gestion de Fichiers
+Architecture étendue
+La base SQLite (rag_database.db) remplace désormais les fichiers JSON/FAISS/BM25 autonomes pour centraliser toutes les données.
+Deux tables principales :
+- files : métadonnées des documents (matière, sous_matière, enseignant, semestre, promo, statut de traitement, nombre de chunks).
+- rag_chunks : segments textuels indexés, avec embeddings, scores, et lien vers leur fichier source.
+Le champ sous_matiere a été ajouté et géré comme matiere dans toutes les requêtes, filtres et jointures.
+Chaque fichier traité conserve son file_id, et chaque chunk est lié par clé étrangère à ce fichier (file_id → rag_chunks.file_id).
+
+Nouvelles fonctions de gestion
+Ajout et ingestion automatique depuis l’interface web : un PDF est ajouté, découpé, vectorisé et inséré directement dans la base.
+
+Suivi du statut de traitement :
+is_processed : indique si le PDF a été vectorisé.
+chunk_count : nombre total de segments extraits et stockés.
+Export automatique : la base peut être exportée vers vector_db.json pour compatibilité avec les versions précédentes.
+Requêtes enrichies
+Les filtres par matière, sous-matière, enseignant, promo et semestre sont supportés dans les fonctions RAG.
+Nouvelle méthode get_rag_chunks_by_classification() pour récupérer dynamiquement les chunks filtrés par métadonnées.
+Écran de Gestion de Fichiers (nouvelle interface)
+Vue d’ensemble
+Accessible via http://localhost:8000/file_manager.html
+Permet la gestion complète des fichiers PDF : ajout, suppression, visualisation des métadonnées, statut de traitement et nombre de chunks.
+
+Fonctionnalités principales
+Ajout de fichier :
+Formulaire d’upload avec métadonnées obligatoires (matiere, sous_matiere, enseignant, promo, semestre).
+L’ingestion est automatique (pas besoin d’appeler enhanced_ingest.py manuellement).
+Suivi du traitement :
+Les fichiers apparaissent dans la liste avec leur statut (✅ traité / ⏳ en attente).
+Le compteur Chunks: indique le nombre réel de segments stockés en base.
+Résumé dynamique :
+L’en-tête affiche un récapitulatif : total de fichiers, nombre de chunks, fichiers traités, et valeurs uniques des métadonnées.
+Filtrage par métadonnées :
+La vue de résumé récupère toutes les combinaisons distinctes de matière / sous-matière / enseignant / promo / semestre.
+API associées
+GET /api/files : liste complète des fichiers et de leurs métadonnées.
+
+POST /api/files/upload : ajout et ingestion d’un nouveau PDF.
+
+GET /api/summary : statistiques globales (chunks, fichiers, classifications).
+
+DELETE /api/files/{id} : suppression d’un document et de ses chunks.
