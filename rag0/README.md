@@ -7,12 +7,34 @@ ECE Paris RAG (Local MVP)
 - Fonctionne sur un laptop étudiant (Python pur + Ollama), documenté pour qu’un·e membre de l’équipe puisse reprendre rapidement.
 
 ## Prérequis & installation
-- Python 3.10+, [Ollama](https://ollama.ai) avec les modèles `hf.co/CompendiumLabs/bge-base-en-v1.5-gguf` (embedding) et `hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF` (LLM). Adapter si un modèle FR comme `bge-m3` est dispo en gguf.
-- Dépendances Python :
+- macOS/Linux avec `python3.10+` et `pip`. Sur macOS, installez [Homebrew](https://brew.sh) puis `brew install python@3.10` si besoin.
+- [Ollama](https://ollama.ai) installé localement (`brew install --cask ollama` sur macOS, installeur officiel sur Linux/Windows). Vérifiez que le service tourne (`ollama serve`).
+- Modèles nécessaires (run une seule fois) :
   ```bash
-  pip install fastapi uvicorn pymupdf faiss-cpu rank-bm25 numpy
+  ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
+  ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
   ```
-- Vérifier que les modèles Ollama sont téléchargeés en local (aucun appel réseau en production).
+  Vous pouvez remplacer par `bge-m3`/autre modèle gguf FR tant qu’il est présent lors de l’ingestion et de l’inférence.
+- Dépendances Python (vous pouvez créer un venv `python -m venv .venv && source .venv/bin/activate`) :
+  ```bash
+  pip install fastapi uvicorn pymupdf faiss-cpu rank-bm25 numpy ollama
+  ```
+  Ajoutez `python-dotenv` ou autres libs selon vos besoins front/back.
+
+### Installation pas-à-pas
+1. **Cloner** :
+   ```bash
+   git clone https://github.com/paulclark-04/ragmilo.git
+   cd ragmilo/rag0
+   ```
+2. **Créer la base SQLite** (tables + vues) :
+   ```bash
+   python setup_database.py --setup
+   ```
+   - Pour migrer un `vector_db.json` existant : `python setup_database.py --migrate vector_db.json`.
+3. **(Optionnel) Importer des fichiers existants** : copiez vos PDF dans `uploads/` ou utilisez l’UI `file_manager` ci-dessous.
+4. **Configurer Ollama** : démarrer `ollama serve` dans un terminal séparé, vérifier `ollama list`.
+5. **Tester le pipeline CLI** (après ingestion) : `python demo.py --question ...` (voir section Utilisation).
 
 ## Workflow
 1. **Ingestion (`ingest_pdf.py`)**
@@ -34,6 +56,18 @@ ECE Paris RAG (Local MVP)
    - `output_formatter.py` produit une réponse JSON : `answer`, `sources`, `confidence`, `metadata_used`, `retrieval_stats` (top1, moyenne, seuil, tailles FAISS/BM25).
 
 ## Utilisation
+### Lancement des services
+- **API RAG + Front chat** :
+  ```bash
+  uvicorn server:app --reload
+  ```
+  Front accessible sur `http://localhost:8000`.
+- **File Manager (upload + classification + ingestion async)** :
+  ```bash
+  uvicorn file_manager:app --reload --port 8001
+  ```
+  Permet d’uploader un PDF, le script lance automatiquement `enhanced_ingest.py` en arrière-plan (nécessite Ollama + Faiss installés).
+
 ### Ingestion
 ```bash
 python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
@@ -43,6 +77,12 @@ python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
   --output vector_db.json --append
 ```
 - `--append` évite de recalculer les chunks déjà présents (les `chunk_id` existants sont ignorés).
+
+### Ingestion via l’interface fichier
+1. Lancer `uvicorn file_manager:app --reload --port 8001`.
+2. Ouvrir `http://localhost:8001` puis remplir le formulaire (matière, enseignant, promo…).
+3. À l’upload, le fichier passe en statut `en traitement`, puis `traite` quand `enhanced_ingest.py` finit (chunking, embeddings, export FAISS/BM25/JSON).
+4. En cas d’erreur (ex. modèle manquant), le statut est `erreur: ...` : vérifier les logs serveur.
 
 ### Requête CLI
 ```bash
@@ -60,6 +100,12 @@ uvicorn server:app --reload
 - Front accessible sur `http://localhost:8000` : chat + filtres dynamiques + citations cliquables.
 - Endpoint principal `POST /api/ask` (mêmes champs que `demo.py`).
 
+### Scripts utilitaires
+- `python enhanced_ingest.py --help` : ingestion + export indexes à partir de la base SQLite (support des options `--import-existing`, `--export-only`).
+- `python check_files.py` : opérations de maintenance des fichiers ingérés.
+- `python test_server.py` / `python test_database.py` : smoke tests API + DB.
+- `python update_db_columns.py` : exemple de migration (ajout colonne `sous_matiere`).
+
 ## Sortie JSON
 - `answer`: texte généré ou message d’abstention.
 - `sources`: `{doc_id, doc_label, page, chunk_index, chunk_id, fragment, score, vector_score, lexical_score, matiere, enseignant}`.
@@ -71,6 +117,8 @@ uvicorn server:app --reload
 - Préférer des PDF structurés (titres/sections) pour améliorer le chunking.
 - Régénérer les index après toute mise à jour des PDF ; conserver les `doc_id` lisibles (`algebre-cours1`).
 - Surveiller le seuil d’hallucination : ajuster `threshold` et `alpha` en fonction des corpus.
+- Documenter chaque choix (embedding, paramètres) dans ce README ou la base (colonne `description`).
+- Penser à démarrer Ollama avant tout appel aux scripts (`ollama serve`).
 
 ## Limites & suite
 - Corpus réduit, chunking encore fixe (pas de segmentation sémantique).
