@@ -71,7 +71,6 @@ uvicorn server:app --reload
 - Préférer des PDF structurés (titres/sections) pour améliorer le chunking.
 - Régénérer les index après toute mise à jour des PDF ; conserver les `doc_id` lisibles (`algebre-cours1`).
 - Surveiller le seuil d’hallucination : ajuster `threshold` et `alpha` en fonction des corpus.
-- Documenter chaque choix (embedding, paramètres) dans `workflow.md` n’est plus nécessaire : tout est consolidé ici.
 
 ## Limites & suite
 - Corpus réduit, chunking encore fixe (pas de segmentation sémantique).
