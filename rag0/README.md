@@ -1,145 +1,85 @@
 ECE Paris RAG (Local MVP)
 
-## Vision & Cadre
-- **Objectif** : répondre aux questions des étudiant·e·s ECE Paris à partir des cours PDF et des notes Milo.
-- **Périmètre** : indexation par matière, enseignant, promo, semestre ; fonctionnement 100% local.
-- **Principes de design** :
-  1. Minimalisme (code simple, lisible)  
-  2. Zéro hallucination (abstention si info manquante)  
-  3. Traçabilité (citations doc/page/score)  
-  4. Métadonnées au cœur (filtres matière/enseignant/promo)  
-  5. Local-first (pas de dépendances cloud)
-- **Contraintes Milo** : réponse en français, confidentialité, intégration future dans la plateforme Milo, exécution sur laptop étudiant.
-- **Références** : tutoriel HuggingFace “Make your own RAG”, approche pure Python.
+## Vision & principes
+- Répondre aux questions des étudiant·e·s à partir des PDF de cours et des notes Milo, 100 % hors-ligne.
+- Code minimaliste, traçable, sans hallucination : cite les documents et s’abstient si l’info manque.
+- Métadonnées au cœur (matière, enseignant, promo, semestre) pour filtrer interactivement et préparer l’intégration Milo.
+- Fonctionne sur un laptop étudiant (Python pur + Ollama), documenté pour qu’un·e membre de l’équipe puisse reprendre rapidement.
 
-## Setup
-- Python 3.10+ et Ollama avec les modèles gguf nécessaires (embedding + LLM).
-- Installer les dépendances Python :
+## Prérequis & installation
+- Python 3.10+, [Ollama](https://ollama.ai) avec les modèles `hf.co/CompendiumLabs/bge-base-en-v1.5-gguf` (embedding) et `hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF` (LLM). Adapter si un modèle FR comme `bge-m3` est dispo en gguf.
+- Dépendances Python :
   ```bash
   pip install fastapi uvicorn pymupdf faiss-cpu rank-bm25 numpy
   ```
-- Vérifier que les modèles Ollama sont disponibles hors-ligne.
+- Vérifier que les modèles Ollama sont téléchargeés en local (aucun appel réseau en production).
 
-## Pipeline (vue d’ensemble)
-1. **Ingestion** : PDF → PyMuPDF → chunk de 500 mots (overlap 50) → embeddings Ollama → stockage JSON + indexes FAISS/BM25.
-2. **Requête** : question utilisateur → embedding → retrieval hybride (vecteurs + BM25) → filtres métadonnées.
-3. **Réponse** : prompt strict (citations obligatoires, abstention si seuil non atteint) → LLM via Ollama.
-4. **Sortie** : JSON structuré (`answer`, `sources`, `confidence`, stats de retrieval) et UI chat.
+## Workflow
+1. **Ingestion (`ingest_pdf.py`)**
+   - Chaque PDF est découpé en chunks ~500 mots (overlap léger) via PyMuPDF.
+   - Pour chaque chunk : embedding BGE (Ollama) + ajout des métadonnées (matière, enseignant, promo, semestre).
+   - Stockage :
+     - `vector_db.json` → texte + métadonnées + embeddings.
+     - `vector_index.faiss` → index `IndexFlatIP` pour la similarité cosinus.
+     - `bm25_index.pkl` → corpus BM25 (`rank_bm25.BM25Okapi`).
+     - `index_meta.json` → configuration d’ingestion (modèle, nb de chunks) pour vérifier la cohérence lors du chargement.
+2. **Retrieval hybride (`demo.py` / `rag_core.HybridRetriever`)**
+   - Une requête est vectorisée avec le même modèle BGE (`vector_k` candidats FAISS).
+   - En parallèle, BM25 score tous les chunks (`bm25_k`).
+   - Les scores sont normalisés, pondérés par `alpha` (0.65 par défaut) et fusionnés ; les `top_n` chunks gagnants conservent leurs scores vectoriel/lexical.
+3. **Filtre de confiance**
+   - Si le meilleur score vectoriel < `threshold` (0.35 par défaut), le pipeline renvoie “Information non trouvée…” pour éviter les hallucinations tout en exposant les stats de retrieval.
+4. **Génération & formatage**
+   - Les chunks sélectionnés sont contextualisés (`[doc_id:page:index]`) puis envoyés au LLM Ollama avec une instruction stricte (français, citations obligatoires).
+   - `output_formatter.py` produit une réponse JSON : `answer`, `sources`, `confidence`, `metadata_used`, `retrieval_stats` (top1, moyenne, seuil, tailles FAISS/BM25).
 
-## Ingestion
-- Construire la base vectorielle et les indexes hybrides à partir d’un ou plusieurs PDF :
-  ```bash
-  python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
-    --matiere "Machine Learning" --enseignant "Jean Dupont" \
-    --promo 2025 --semestre S1 \
-    --embed-model hf.co/CompendiumLabs/bge-base-en-v1.5-gguf \
-    --output vector_db.json --append
-  ```
-- Sorties générées :
-  - `vector_db.json` (chunks + métadonnées + embeddings)
-  - `vector_index.faiss` (index FAISS normalisé)
-  - `bm25_index.pkl` (index lexical BM25)
-  - `index_meta.json` (métadonnées d’ingestion : modèle d’embedding, nb de chunks)
-- Chaque PDF reçoit un `doc_id` lisible (ex. `algebre-cours1`), et chaque chunk un `chunk_id` `docid:page:index`.
+## Utilisation
+### Ingestion
+```bash
+python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
+  --matiere "Machine Learning" --enseignant "Jean Dupont" \
+  --promo 2025 --semestre S1 \
+  --embed-model hf.co/CompendiumLabs/bge-base-en-v1.5-gguf \
+  --output vector_db.json --append
+```
+- `--append` évite de recalculer les chunks déjà présents (les `chunk_id` existants sont ignorés).
 
-## Querying (CLI)
-- Exemple :
-  ```bash
-  python3 demo.py --question "Explique le perceptron" --matiere "Machine Learning" \
-    --top-n 3 --threshold 0.35 --vector-k 20 --bm25-k 40 --alpha 0.65
-  ```
-- Le CLI affiche la question, la réponse, puis les sources (avec score combiné, score vectoriel, score BM25, doc/page/index).
-- `--json` renvoie la réponse formatée pour intégration Milo.
+### Requête CLI
+```bash
+python3 demo.py --question "Explique le perceptron" \
+  --matiere "Machine Learning" --top-n 3 --threshold 0.35 \
+  --vector-k 20 --bm25-k 40 --alpha 0.65 --json
+```
+- Renvoie soit une réponse sourcée, soit “Information non trouvée…”.
+- En mode texte, les sources affichent scores hybrides + doc/page/index.
 
-## Web UI
-- Lancer l’API + le front :
-  ```bash
-  uvicorn server:app --reload
-  ```
-- Ouvrir `http://localhost:8000` pour utiliser l’interface chat (filtres dynamiques matière/enseignant/promo/semestre, indicateur de frappe, citations cliquables).
-- Endpoint REST principal : `POST /api/ask` (même payload que `demo.py`).
+### API & Web UI
+```bash
+uvicorn server:app --reload
+```
+- Front accessible sur `http://localhost:8000` : chat + filtres dynamiques + citations cliquables.
+- Endpoint principal `POST /api/ask` (mêmes champs que `demo.py`).
 
-## Sortie JSON (structure)
-- `answer` : texte généré (ou “Information non trouvée…”)
-- `sources` : liste de `{doc_id, doc_label, page, chunk_index, chunk_id, fragment, score, vector_score, lexical_score, matiere, enseignant}`
-- `confidence` : moyenne des scores top-k
-- `metadata_used` : filtres appliqués
-- `retrieval_stats` : `top1`, `avg_topk`, `threshold`, `vector_top1`, `lexical_top1`, `k`
+## Sortie JSON
+- `answer`: texte généré ou message d’abstention.
+- `sources`: `{doc_id, doc_label, page, chunk_index, chunk_id, fragment, score, vector_score, lexical_score, matiere, enseignant}`.
+- `confidence`: moyenne des scores hybrides du top-n.
+- `metadata_used`: filtres réellement appliqués.
+- `retrieval_stats`: `top1`, `avg_topk`, `threshold`, `vector_top1`, `lexical_top1`, `vector_k`, `bm25_k`.
 
-## Notes & Bonnes pratiques
-- Par défaut, l’embedding est anglophone (`bge-base-en`), recommander un modèle FR/multi (ex. `bge-m3`) si disponible en gguf.
-- Structurer les PDF (titres, sections) pour de meilleurs chunks.
-- Régénérer les indexes après chaque ajout/mise à jour de PDF (utiliser `--append` pour enrichir sans tout recalculer).
-- Pour changer de modèle d’embedding : re-ingérer avec `--embed-model ...` et relancer `demo.py` / l’API avec le même identifiant.
+## Bonnes pratiques
+- Préférer des PDF structurés (titres/sections) pour améliorer le chunking.
+- Régénérer les index après toute mise à jour des PDF ; conserver les `doc_id` lisibles (`algebre-cours1`).
+- Surveiller le seuil d’hallucination : ajuster `threshold` et `alpha` en fonction des corpus.
+- Documenter chaque choix (embedding, paramètres) dans `workflow.md` n’est plus nécessaire : tout est consolidé ici.
 
-## Critères et métriques (réunion Nov 7)
-- Fonctionnalité : réponses correctes et sourcées.
-- Qualité de réponse : précision pédagogique, citations exactes, français clair.
-- Intégration Milo : compatibilité architecture cible.
-- Code : lisible, documenté, maîtrisable par toute l’équipe.
-- Compréhension équipe : chacun peut expliquer le pipeline.
-- **KPIs visés** : Precision@3 >70 %, temps <10 s/question, hallucination 0 %, citations 100 %, filtres métadonnées 100 %.
+## Limites & suite
+- Corpus réduit, chunking encore fixe (pas de segmentation sémantique).
+- Pas de reformulation de requête ni de multi-hop ; validation anti-hallucination limitée au seuil + prompt.
+- Roadmap courte : validation/citations renforcées, chunking sémantique, ingestion incrémentale “à chaud”, intégration Milo + instrumentation (latence/logs), boucle de feedback utilisateur.
 
-## Limites actuelles (MVP)
-- Corpus réduit (quelques dizaines de chunks).
-- Chunking fixe (pas encore sémantique).
-- Pas de reformulation requête ni de multi-hop.
-- Dépendance à Ollama local (modèles installés manuellement).
-- Validation anti-hallucination basée sur le seuil + prompt (pas encore de post-check automatique).
-
-## Roadmap / Futurs travaux
-- Renforcer la validation (post-vérification de citations, filtrage strict).
-- Chunking sémantique, regroupement par chapitres, BM25+rerank avancé.
-- Ingestion incrémentale à chaud (sans rebuild complet, watchers).
-- Intégration Milo (API locale, SDK, instrumentation latence/logs).
-- Feedback utilisateur (notations, boucle d’amélioration) et A/B testing.
-
-## Philosophie de développement
-1. Livrer le plus simple MVP fonctionnel avant d’ajouter de la complexité.
-2. Basculer vers des optimisations guidées par des métriques et cas réels.
-3. Gérer les risques de hallucination en priorité (seuil, consignes, validations).
-4. Documenter chaque décision pour que les pairs puissent reprendre facilement.
-5. Maintenir une codebase lisible pour des étudiant·e·s Junior.
-
-Ingestion
-- Build the vector database and hybrid indexes from one or more PDFs:
-  `python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
-    --matiere "Machine Learning" --enseignant "Jean Dupont" \
-    --promo 2025 --semestre S1 \
-    --embed-model hf.co/CompendiumLabs/bge-base-en-v1.5-gguf \
-    --output vector_db.json`
-- Outputs:
-  - `vector_db.json` (chunks + metadata + embeddings)
-  - `vector_index.faiss` (FAISS cosine index)
-  - `bm25_index.pkl` (BM25Okapi corpus)
-  - `index_meta.json` (ingestion metadata)
-- `--append` réutilise la base existante et ajoute seulement les nouveaux PDF (les `chunk_id` déjà présents sont ignorés).
-- Le script assigne un `doc_id` stable par PDF et un `chunk_id` `docid:page:index`.
-
-Querying
-- Ask a question with optional metadata filters and guardrails:
-  `python3 demo.py --question "Explique le perceptron" --matiere "Machine Learning" \
-    --top-n 3 --threshold 0.35 --vector-k 20 --bm25-k 40 --alpha 0.65`
-- `demo.py` fusionne FAISS (vecteurs) et BM25 (lexical) puis refuse de répondre si le meilleur score vectoriel est sous `--threshold`.
-
-Web UI
-- Lancer l’API + front : `uvicorn server:app --reload`
-- Ouvrir `http://localhost:8000` : interface chat moderne (saisie question, filtres matière/enseignant/promo, affichage des sources et scores).
-- L’API REST (POST `/api/ask`) renvoie le même JSON que `demo.py`.
-
-Output
-- CLI : question, réponse, puis sources avec scores hybrides (`score`, `vector_score`, `lexical_score`) et indice de confiance moyen.
-- JSON (`--json`) : `answer`, `sources` (incl. `doc_id`, `page`, `chunk_id`, `score`, `vector_score`, `lexical_score`),
-  `confidence`, `metadata_used`, `retrieval_stats` (top1, vector_top1, lexical_top1, seuil).
-
-Notes
-- Embeddings par défaut en anglais : privilégiez un modèle multilingue/FR (ex. bge-m3) disponible en GGUF.
-- Gardez des PDF structurés (titres, sections) pour de meilleurs chunks.
-- Regénérez les indexes après chaque ajout/mise à jour de documents.
-- Pour switcher d’embedding (ex. bge-m3), passez `--embed-model` à l’ingestion puis relancez `demo.py` avec le même modèle.
-
-Roadmap
-- Mettre en place un protocole de validation manuel (cas Milo réels, revue croisée),
-- Mettre en place une segmentation sémantique + regroupement par chapitres,
-- Préparer un mode d’ingestion incrémentale à chaud (sans rebuild complet),
-- Intégrer Milo (API locale) et instrumentation (latence, logs RAG).
+## Philosophie dev
+1. Livrer un MVP simple et traçable avant d’optimiser.
+2. Prioriser la réduction d’hallucinations (seuil, consignes, validations).
+3. Mesurer avant d’itérer (Precision@3 >70 %, <10 s par question, 0 % hallucination, 100 % citations/filtres).
+4. Maintenir un code compréhensible par toute l’équipe.
