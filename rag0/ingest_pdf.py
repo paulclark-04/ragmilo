@@ -19,6 +19,7 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit('rank_bm25 est requis. Installez-le avec `pip install rank-bm25`.') from exc
 
+from improved_chunking import improved_chunk_text
 
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 VECTOR_DB = []
@@ -31,13 +32,18 @@ TOKEN_PATTERN = re.compile(r"\b\w+\b", re.UNICODE)
 
 
 def chunk_text(text, size=500, overlap=50):
-    words = text.split()
-    chunks = []
-    for i in range(0, len(words), size - overlap):
-        chunk = ' '.join(words[i:i + size])
-        if len(chunk.strip()) > 50:
-            chunks.append(chunk)
-    return chunks
+    """
+    Wrapper pour improved_chunk_text avec méthode 'paragraphs'.
+    L'ancienne fonction est conservée pour compatibilité mais utilise maintenant
+    le chunking amélioré par paragraphes.
+
+        method: Méthode de chunking
+            - 'paragraphs': Découpe par paragraphes (RECOMMANDÉ)
+            - 'sections': Découpe par sections avec détection de titres
+            - 'context': Découpe avec contexte de section (MEILLEUR)
+            - 'smart': Overlap intelligent avec respect des phrases
+    """
+    return improved_chunk_text(text, size=size, method='context')
 
 
 def tokenize(text: str):
@@ -71,7 +77,8 @@ def parse_pdf(pdf_path, metadata):
     start_count = len(VECTOR_DB)
     for page_num in range(total_pages):
         text = doc[page_num].get_text()
-        page_chunks = chunk_text(text)
+        # Utilise le chunking amélioré par paragraphes
+        page_chunks = improved_chunk_text(text, size=500, method='paragraphs')
 
         for idx, chunk in enumerate(page_chunks):
             embedding = ollama.embed(model=EMBEDDING_MODEL, input=chunk)['embeddings'][0]
