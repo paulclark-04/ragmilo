@@ -1,0 +1,5 @@
+{
+  "embedding_model": "hf.co/CompendiumLabs/bge-base-en-v1.5-gguf",
+  "chunk_count": 900,
+  "database_integrated": true
+}

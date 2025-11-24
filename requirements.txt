@@ -1,0 +1,40 @@
+# --- Core Python ---
+pydantic
+python-dotenv
+tqdm
+watchdog
+
+# --- Backend / API ---
+fastapi
+uvicorn
+flask
+flask-cors
+flask-socketio
+python-socketio
+
+# --- RAG / Embeddings / Vector DB ---
+faiss-cpu
+chromadb
+numpy
+pandas
+nltk
+rank-bm25
+
+# --- OpenAI / External APIs ---
+openai
+requests
+
+# --- PDF / File processing ---
+pypdf2
+pdfplumber
+
+# --- Audio / STT / TTS ---
+pydub
+soundfile
+scipy
+
+# --- Web ---
+jinja2
+
+# --- Tests ---
+pytest
