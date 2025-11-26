@@ -4,6 +4,7 @@ const textarea = document.getElementById('question');
 const clearButton = document.getElementById('clear-convo');
 
 const matiereSelect = document.getElementById('matiere');
+const sousMatiereSelect = document.getElementById('sous_matiere');
 const enseignantSelect = document.getElementById('enseignant');
 const semestreSelect = document.getElementById('semestre');
 const promoSelect = document.getElementById('promo');
@@ -37,7 +38,9 @@ async function loadMetadata() {
     const metadata = await response.json();
     const unique = metadata.unique || {};
     metadataRecords = metadata.records || [];
+    metadataRecords = metadata.records || [];
     populateSelect(matiereSelect, unique.matiere || []);
+    populateSelect(sousMatiereSelect, unique.sous_matiere || []);
     populateSelect(enseignantSelect, unique.enseignant || []);
     populateSelect(semestreSelect, unique.semestre || []);
     populateSelect(promoSelect, unique.promo || []);
@@ -49,6 +52,7 @@ async function loadMetadata() {
 function filterOptions() {
   const selection = {
     matiere: matiereSelect.value || null,
+    sous_matiere: sousMatiereSelect.value || null,
     enseignant: enseignantSelect.value || null,
     semestre: semestreSelect.value || null,
     promo: promoSelect.value || null,
@@ -76,6 +80,14 @@ function filterOptions() {
     matiereSelect.value = previousMatiere;
   }
   selection.matiere = matiereSelect.value || null;
+
+  const sousMatieres = computeOptions('sous_matiere');
+  const previousSous = selection.sous_matiere;
+  populateSelect(sousMatiereSelect, sousMatieres);
+  if (previousSous && sousMatieres.includes(previousSous)) {
+    sousMatiereSelect.value = previousSous;
+  }
+  selection.sous_matiere = sousMatiereSelect.value || null;
 
   const enseignants = computeOptions('enseignant');
   populateSelect(enseignantSelect, enseignants);
@@ -188,6 +200,7 @@ async function sendQuestion(question) {
   const payload = {
     question,
     matiere: matiereSelect.value || null,
+    sous_matiere: sousMatiereSelect.value || null,
     enseignant: enseignantSelect.value || null,
     semestre: semestreSelect.value || null,
     promo: promoSelect.value || null,
@@ -244,7 +257,7 @@ textarea.addEventListener('keydown', (event) => {
   }
 });
 
-[matiereSelect, enseignantSelect, semestreSelect, promoSelect].forEach((select) => {
+[matiereSelect, sousMatiereSelect, enseignantSelect, semestreSelect, promoSelect].forEach((select) => {
   select.addEventListener('change', filterOptions);
 });
 

@@ -71,12 +71,14 @@ ECE Paris RAG (Local MVP)
 ### Ingestion
 ```bash
 python3 ingest_pdf.py --pdf cours_ml.pdf --pdf cours_algebre.pdf \
-  --matiere "Machine Learning" --enseignant "Jean Dupont" \
+  --matiere "Machine Learning" --sous-matiere "Perceptron" \
+  --enseignant "Jean Dupont" \
   --promo 2025 --semestre S1 \
   --embed-model hf.co/CompendiumLabs/bge-base-en-v1.5-gguf \
   --output vector_db.json --append
 ```
 - `--append` évite de recalculer les chunks déjà présents (les `chunk_id` existants sont ignorés).
+- `--sous-matiere` est facultatif ; s'il est omis, la matière est réutilisée comme sous-matière.
 
 ### Ingestion via l’interface fichier
 1. Lancer `uvicorn file_manager:app --reload --port 8001`.

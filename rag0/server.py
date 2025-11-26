@@ -28,6 +28,7 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     question: str
     matiere: Optional[str] = None
+    sous_matiere: Optional[str] = None
     enseignant: Optional[str] = None
     semestre: Optional[str] = None
     promo: Optional[str] = None
@@ -71,7 +72,7 @@ def build_prompt(retrieved_knowledge, threshold):
 @app.get('/api/metadata')
 def get_metadata():
     retr = ensure_retriever()
-    keys = ['matiere', 'enseignant', 'semestre', 'promo']
+    keys = ['matiere', 'sous_matiere', 'enseignant', 'semestre', 'promo']
     unique: Dict[str, set] = {k: set() for k in keys}
     records = []
     seen = set()
@@ -99,6 +100,7 @@ def ask_question(payload: QueryRequest):
 
     metadata_filter = {
         'matiere': payload.matiere,
+        'sous_matiere': payload.sous_matiere,
         'enseignant': payload.enseignant,
         'semestre': payload.semestre,
         'promo': payload.promo,

@@ -5,6 +5,7 @@ Provides web interface for managing files, classifications, and database operati
 
 import json
 from pathlib import Path
+import sys
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
@@ -205,7 +206,7 @@ async def upload_file(
         def process_in_background():
             try:
                 cmd = [
-                    "python", "enhanced_ingest.py",
+                    sys.executable, "enhanced_ingest.py",
                     "--pdf", str(file_path),
                     "--matiere", matiere,
                     "--sous_matiere", sous_matiere,

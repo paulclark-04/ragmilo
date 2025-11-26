@@ -13,7 +13,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f6fa;
             min-height: 100vh;
             padding: 20px;
         }
@@ -159,9 +159,14 @@
         
         .file-header {
             display: flex;
-            justify-content: between;
-            align-items: center;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 10px;
+            gap: 10px;
+        }
+        
+        .file-header-actions {
+            margin-left: auto;
         }
         
         .file-name {
@@ -272,15 +277,15 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📚 ECE Paris RAG</h1>
+            <h1>ECE Paris RAG</h1>
             <p>Gestion des Fichiers et Classification</p>
         </div>
         
         <div class="content">
             <div class="tabs">
-                <div class="tab active" onclick="showTab('upload')">📤 Ajouter Fichier</div>
-                <div class="tab" onclick="showTab('files')">📁 Fichiers</div>
-                <div class="tab" onclick="showTab('stats')">📊 Statistiques</div>
+                <div class="tab active" onclick="showTab('upload')">Ajouter Fichier</div>
+                <div class="tab" onclick="showTab('files')">Fichiers</div>
+                <div class="tab" onclick="showTab('stats')">Statistiques</div>
             </div>
             
             <!-- Upload Tab -->
@@ -341,7 +346,7 @@
                         <input type="text" id="tags" name="tags" placeholder="Ex: cours, td, examen (séparés par des virgules)">
                     </div>
                     
-                    <button type="submit" class="btn">📤 Ajouter le Fichier</button>
+                    <button type="submit" class="btn">Ajouter le Fichier</button>
                 </form>
             </div>
             
@@ -383,7 +388,7 @@
                             </select>
                         </div>
                     </div>
-                    <button class="btn" onclick="loadFiles()">🔍 Filtrer</button>
+                    <button class="btn" onclick="loadFiles()">Filtrer</button>
                 </div>
                 
                 <div id="filesList" class="file-list">
@@ -507,9 +512,8 @@
                 <div class="file-item">
                     <div class="file-header">
                         <div class="file-name">${file.filename}</div>
-                        <div>
-                            <button class="btn btn-secondary" onclick="editFile(${file.id})">✏️ Modifier</button>
-                            <button class="btn btn-danger" onclick="deleteFile(${file.id})">🗑️ Supprimer</button>
+                        <div class="file-header-actions">
+                            <button class="btn btn-danger" onclick="deleteFile(${file.id})">Supprimer</button>
                         </div>
                     </div>
                     <div class="file-meta">
@@ -601,7 +605,9 @@
         
         function populateSelect(selectId, options) {
             const select = document.getElementById(selectId);
-            select.innerHTML = '<option value="">Tous</option>';
+            const feminineFields = ['filter-matiere', 'filter-sous_matiere', 'filter-promo'];
+            const defaultLabel = feminineFields.includes(selectId) ? 'Toutes' : 'Tous';
+            select.innerHTML = `<option value="">${defaultLabel}</option>`;
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option;
@@ -631,11 +637,6 @@
             } catch (error) {
                 alert('Erreur: ' + error.message);
             }
-        }
-        
-        // Edit file (placeholder)
-        function editFile(fileId) {
-            alert('Fonction de modification à implémenter');
         }
         
         // Initialize

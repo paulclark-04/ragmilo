@@ -169,6 +169,7 @@ def main():
     parser = argparse.ArgumentParser(description='Ingest PDFs and build RAG indexes')
     parser.add_argument('--pdf', action='append', required=True, help='Path to a PDF (can be repeated)')
     parser.add_argument('--matiere', required=True, help='Subject (matière)')
+    parser.add_argument('--sous-matiere', dest='sous_matiere', help='Sous-matière (defaults to matiere if omitted)')
     parser.add_argument('--enseignant', required=True, help='Instructor')
     parser.add_argument('--promo', required=True, help='Promo/Year, e.g., 2025')
     parser.add_argument('--semestre', required=True, help='Semester, e.g., S1')
@@ -192,6 +193,7 @@ def main():
 
     base_meta = {
         'matiere': args.matiere,
+        'sous_matiere': args.sous_matiere or args.matiere,
         'enseignant': args.enseignant,
         'promo': args.promo,
         'semestre': args.semestre,
