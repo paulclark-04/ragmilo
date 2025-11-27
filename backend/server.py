@@ -1,4 +1,6 @@
 import json
+import webbrowser
+import threading
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -8,13 +10,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from output_formatter import format_response
-from rag_core import DEFAULT_EMBEDDING_MODEL, HybridRetriever
+from backend.output_formatter import format_response
+from backend.rag_core import DEFAULT_EMBEDDING_MODEL, HybridRetriever
 
 
-frontend_dir = Path('../frontend/front_voice')
+BASE_DIR = Path(__file__).resolve().parent.parent 
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+FRONT_VOICE_DIR = FRONTEND_DIR / "front_voice"
+FRONT_TEXT_DIR = FRONTEND_DIR / "front_text"
+
+
 
 app = FastAPI(title='ECE RAG API', version='1.0')
+app.mount("/front_text", StaticFiles(directory="frontend/front_text"), name="front_text")
+app.mount("/front_voice", StaticFiles(directory="frontend/front_voice"), name="front_voice")
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,7 +64,6 @@ def ensure_retriever(embed_model: Optional[str] = None) -> HybridRetriever:
     return retriever
 
 
-
 def build_prompt(retrieved_knowledge, threshold):
     context_lines = []
     for chunk, score, meta in retrieved_knowledge:
@@ -71,7 +80,6 @@ def build_prompt(retrieved_knowledge, threshold):
         f"Extraits autorisés:\n{context_block}\n"
     )
     return instruction_prompt
-
 
 
 @app.get('/api/metadata')
@@ -99,7 +107,6 @@ def get_metadata():
     }
 
 
-
 @app.post('/api/ask')
 def ask_question(payload: QueryRequest):
     retr = ensure_retriever(payload.embed_model)
@@ -121,15 +128,11 @@ def ask_question(payload: QueryRequest):
         bm25_k=payload.bm25_k,
     )
 
-    best_vector = 0.0
-    for _, _, meta in retrieved:
-        best_vector = max(best_vector, meta.get('vector_score', 0.0))
+    best_vector = max((meta.get('vector_score', 0.0) for _, _, meta in retrieved), default=0.0)
 
     if best_vector < payload.threshold:
         answer = "Information non trouvée dans les sources disponibles."
-        response = json.loads(
-            format_response(answer, retrieved, metadata_filter, retrieval_threshold=payload.threshold)
-        )
+        response = json.loads(format_response(answer, retrieved, metadata_filter, retrieval_threshold=payload.threshold))
         return response
 
     prompt = build_prompt(retrieved, payload.threshold)
@@ -148,20 +151,27 @@ def ask_question(payload: QueryRequest):
 
     answer = chat.get('message', {}).get('content', '')
 
-    response = json.loads(
-        format_response(answer, retrieved, metadata_filter, retrieval_threshold=payload.threshold)
-    )
+    response = json.loads(format_response(answer, retrieved, metadata_filter, retrieval_threshold=payload.threshold))
     return response
-
 
 
 @app.post("/rag/query")
 async def rag_query(q: Query):
-    """Ancien endpoint utilisé par Milo, désormais redirigé vers /api/ask."""
     req = QueryRequest(question=q.question)
     return ask_question(req)
 
 
 
-if frontend_dir.exists():
-    app.mount('/', StaticFiles(directory=frontend_dir, html=True), name='frontend')
+
+if FRONT_TEXT_DIR.exists():
+    app.mount("/front_text", StaticFiles(directory=str(FRONT_TEXT_DIR), html=True), name="front_text")
+
+if FRONT_VOICE_DIR.exists():
+    app.mount("/front_voice", StaticFiles(directory=str(FRONT_VOICE_DIR), html=True), name="front_voice")
+
+
+
+def open_frontend():
+    webbrowser.open("http://127.0.0.1:8000/front_voice/index_voice.html")
+
+threading.Timer(1.0, open_frontend).start()

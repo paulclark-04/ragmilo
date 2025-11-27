@@ -124,7 +124,7 @@ class SubSynthesizer:
         base_prompt = rag_info
 
         try:
-            from frontend.src.lib import file_manager_milo
+            from lib import file_manager_milo
 
             final_resume_path = file_manager_milo.sub_resume_dir / "transcript_final_resume.txt"
             transcript_final_path = file_manager_milo.transcript_dir / "transcript_final.txt"

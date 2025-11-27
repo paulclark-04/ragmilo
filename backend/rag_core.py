@@ -3,11 +3,13 @@ import json
 import pickle
 import re
 import sys
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import ollama
+
 
 try:
     import faiss  # type: ignore
@@ -22,6 +24,7 @@ except ImportError as exc:  # pragma: no cover
 
 DEFAULT_EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 
+BASE_DIR = Path(__file__).resolve().parent
 
 def tokenize(text: str) -> List[str]:
     pattern = re.compile(r"\b\w+\b", re.UNICODE)
@@ -82,10 +85,10 @@ def _ensure_identifiers(metadata: Dict, chunk: str) -> Dict:
 class HybridRetriever:
     def __init__(
         self,
-        vector_db_path: Path = Path('vector_db.json'),
-        faiss_path: Path = Path('vector_index.faiss'),
-        bm25_path: Path = Path('bm25_index.pkl'),
-        meta_path: Path = Path('index_meta.json'),
+        vector_db_path: Path = BASE_DIR / 'vector_db.json',
+        faiss_path: Path = BASE_DIR / 'vector_index.faiss',
+        bm25_path: Path = BASE_DIR / 'bm25_index.pkl',
+        meta_path: Path = BASE_DIR / 'index_meta.json',
         embedding_model: Optional[str] = None,
     ) -> None:
         self.vector_db_path = vector_db_path

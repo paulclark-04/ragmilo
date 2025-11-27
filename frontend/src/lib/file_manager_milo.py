@@ -1,6 +1,6 @@
 from pathlib import Path
 
-project_root_dir = Path(__file__).resolve().parent.parent.parent
+project_root_dir = Path(__file__).resolve().parents[3]
 
 wav_dir = project_root_dir/ "audio" / "recorder" / "wav"
 webm_dir = project_root_dir / "audio" / "recorder" / "webm"
@@ -79,3 +79,24 @@ def append_and_delete_transcript(filename):
         print(f"{file_path} a été concaténé dans {FINAL_TRANSCRIPT} et supprimé.")
     except Exception as e:
         print(f"Erreur lors de la suppression de {file_path}: {e}")
+
+def ensure_directories_exist():
+    dirs = [
+        wav_dir,
+        webm_dir,
+        milo_wav_response_dir,
+        milo_webm_response_dir,
+        milo_wav_question_dir,
+        milo_webm_question_dir,
+        milo_webm_question_response_dir,
+        milo_wav_question_response_dir,
+        transcript_dir,
+        question_transcript_dir,
+        milo_response_dir,
+        sub_resume_dir,
+        tts_model_dir,
+        backup_transcript
+    ]
+
+    for d in dirs:
+        d.mkdir(parents=True, exist_ok=True)

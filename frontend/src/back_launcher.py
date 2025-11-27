@@ -2,7 +2,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 from flask_cors import CORS
-from frontend.src.lib import file_manager_milo
 from werkzeug.utils import secure_filename
 from pathlib import Path
 import os
@@ -12,7 +11,11 @@ import shutil
 import requests
 
 from lib import transcriber, subsynthetizer, webm_to_wav_converter, tts
+from lib import file_manager_milo
 from lib import message_queue
+from lib.file_manager_milo import ensure_directories_exist
+
+ensure_directories_exist()
 
 app = Flask(__name__)
 CORS(app)

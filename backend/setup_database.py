@@ -7,7 +7,7 @@ Initializes the database and provides migration tools
 import argparse
 import json
 from pathlib import Path
-from database_manager import DatabaseManager, import_from_vector_db, export_to_vector_db
+from backend.database_manager import DatabaseManager, import_from_vector_db, export_to_vector_db
 
 
 def setup_database(db_path: str = "rag_database.db"):
@@ -35,16 +35,16 @@ def migrate_existing_data(vector_db_path: str, db_path: str = "rag_database.db")
     with DatabaseManager(db_path) as db:
         try:
             import_from_vector_db(db, vector_db_path)
-            print("✅ Migration completed successfully")
+            print("Migration completed successfully")
             
-            # Show stats after migration
+
             summary = db.get_file_summary()
-            print(f"📊 Database now contains {len(summary)} files")
-            print(f"📊 Total chunks: {sum(f.get('actual_chunks', 0) for f in summary)}")
+            print(f"Database now contains {len(summary)} files")
+            print(f"Total chunks: {sum(f.get('actual_chunks', 0) for f in summary)}")
             
             return True
         except Exception as e:
-            print(f"❌ Migration failed: {e}")
+            print(f"Migration failed: {e}")
             return False
 
 
@@ -55,16 +55,16 @@ def export_database(db_path: str = "rag_database.db", output_path: str = "vector
     with DatabaseManager(db_path) as db:
         try:
             export_to_vector_db(db, output_path)
-            print("✅ Export completed successfully")
+            print("Export completed successfully")
             return True
         except Exception as e:
-            print(f"❌ Export failed: {e}")
+            print(f"Export failed: {e}")
             return False
 
 
 def show_database_info(db_path: str = "rag_database.db"):
     """Show database information and statistics"""
-    print("📊 Database Information")
+    print("Database Information")
     print("=" * 50)
     
     with DatabaseManager(db_path) as db:
@@ -79,12 +79,12 @@ def show_database_info(db_path: str = "rag_database.db"):
         print(f"\n🏷️  Classifications:")
         for field, values in classifications.items():
             print(f"   {field}: {len(values)} values")
-            if len(values) <= 10:  # Show values if not too many
+            if len(values) <= 10:  
                 print(f"      {', '.join(values)}")
             else:
                 print(f"      {', '.join(values[:5])}... (+{len(values)-5} more)")
         
-        # Recent files
+        
         print(f"\n📅 Recent files:")
         for file_info in summary[:5]:
             status = "✅" if file_info.get('is_processed', False) else "⏳"
@@ -96,7 +96,7 @@ def interactive_setup():
     print("🎯 ECE Paris RAG Database Setup")
     print("=" * 40)
     
-    # Check for existing vector_db.json
+    
     vector_db_path = Path("vector_db.json")
     if vector_db_path.exists():
         print(f"📁 Found existing vector_db.json ({vector_db_path.stat().st_size} bytes)")

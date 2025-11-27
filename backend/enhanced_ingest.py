@@ -24,7 +24,7 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit('rank_bm25 est requis. Installez-le avec `pip install rank_bm25`.') from exc
 
-from database_manager import DatabaseManager, export_to_vector_db
+from backend.database_manager import DatabaseManager, export_to_vector_db
 
 
 DEFAULT_EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
@@ -302,7 +302,7 @@ def main():
             # Import existing vector_db.json into database
             if Path(args.output).exists():
                 print("Importing existing vector_db.json into database...")
-                from database_manager import import_from_vector_db
+                from backend.database_manager import import_from_vector_db
                 import_from_vector_db(db_manager, args.output)
             else:
                 print(f"File not found: {args.output}")

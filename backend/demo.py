@@ -5,8 +5,8 @@ from pathlib import Path
 
 import ollama
 
-from output_formatter import format_response
-from rag_core import DEFAULT_EMBEDDING_MODEL, HybridRetriever
+from backend.output_formatter import format_response
+from backend.rag_core import DEFAULT_EMBEDDING_MODEL, HybridRetriever
 
 
 LANGUAGE_MODEL = 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF'

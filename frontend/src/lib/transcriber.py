@@ -3,12 +3,12 @@ from pathlib import Path
 import time
 import os
 
-from frontend.src.lib import file_manager_milo
+from lib import file_manager_milo
 from lib import message_queue
 
 class Transcriber:
 
-    def __init__(self, model_size="medium", device="cuda", compute_type="int8_float16"):
+    def __init__(self, model_size="medium", device="cpu", compute_type="int8"):
         self._model_size = model_size
         self._device = device
         self._compute_type = compute_type

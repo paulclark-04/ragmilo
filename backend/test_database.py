@@ -3,7 +3,7 @@
 Test script to prove database functionality and RAG enhancement
 """
 
-from database_manager import DatabaseManager
+from backend.database_manager import DatabaseManager
 import json
 
 def test_database_functionality():

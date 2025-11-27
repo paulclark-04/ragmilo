@@ -11,6 +11,7 @@ flask
 flask-cors
 flask-socketio
 python-socketio
+eventlet
 
 # --- RAG / Embeddings / Vector DB ---
 faiss-cpu
@@ -32,9 +33,20 @@ pdfplumber
 pydub
 soundfile
 scipy
+faster-whisper
+python-multipart    # pour upload audio
+ffmpeg-python       # recommandé si conversion audio
+piper-tts
+
+# --- Redis / Message Queue ---
+redis
+hiredis        # accélération optionnelle mais recommandée
 
 # --- Web ---
 jinja2
 
 # --- Tests ---
 pytest
+
+# --- Utils ---
+python-dateutil

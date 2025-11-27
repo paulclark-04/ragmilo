@@ -3,7 +3,7 @@ import os
 import wave
 import time
 
-from frontend.src.lib import file_manager_milo
+from lib import file_manager_milo
 
 class TextToSpeech:
     def __init__(self, model_path=os.path.join(file_manager_milo.tts_model_dir,"fr_FR-upmc-medium.onnx")):

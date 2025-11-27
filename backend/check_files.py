@@ -3,7 +3,7 @@
 Check database files status
 """
 
-from database_manager import DatabaseManager
+from backend.database_manager import DatabaseManager
 
 def check_files():
     with DatabaseManager() as db:

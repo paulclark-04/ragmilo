@@ -71,7 +71,7 @@ python file_manager.py
 ### API REST
 ```python
 # Exemples d'utilisation
-from database_manager import DatabaseManager
+from backend.database_manager import DatabaseManager
 
 with DatabaseManager() as db:
     # Ajouter un fichier
@@ -115,7 +115,7 @@ python enhanced_ingest.py \
 ### 2. Export pour Compatibilité
 ```python
 # Exporter vers le format vector_db.json existant
-from database_manager import export_to_vector_db
+from backend.database_manager import export_to_vector_db
 
 with DatabaseManager() as db:
     export_to_vector_db(db, "vector_db.json")
@@ -191,7 +191,7 @@ with DatabaseManager() as db:
 cp rag_database.db rag_database_backup.db
 
 # Exporter vers JSON
-python -c "from database_manager import export_to_vector_db; export_to_vector_db(DatabaseManager(), 'backup.json')"
+python -c "from backend.database_manager import export_to_vector_db; export_to_vector_db(DatabaseManager(), 'backup.json')"
 ```
 
 ### Migration

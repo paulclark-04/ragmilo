@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from pydantic import BaseModel
 
-from database_manager import DatabaseManager
+from backend.database_manager import DatabaseManager
 
 
 # Pydantic models for API
@@ -323,7 +323,7 @@ async def export_database():
     db = get_db_manager()
     
     try:
-        from database_manager import export_to_vector_db
+        from backend.database_manager import export_to_vector_db
         export_to_vector_db(db, "vector_db_export.json")
         return {"message": "Database exported successfully", "file": "vector_db_export.json"}
     except Exception as e:
