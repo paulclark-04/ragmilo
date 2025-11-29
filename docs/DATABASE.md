@@ -1,4 +1,4 @@
-# ECE Paris RAG - Database Integration
+# ECE Paris RAG - Intégration BDD
 
 ## 📋 Vue d'ensemble
 
