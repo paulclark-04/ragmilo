@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiloAI</title>
     <link rel="stylesheet" href="/front_voice/style.css">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -13,7 +15,7 @@
             <img id="logo-right" src="assets/logos/ECE_LOGO_bleu.png" alt="LogoECE">
             <nav class="mode-switch">
                 <a href="../front_text/index_text.html">Mode Texte</a>
-                <a href="../front_voice/index_voice.html">Mode Vocal</a>
+                <a href="../front_voice/index_voice.html" class="active">Mode Vocal</a>
             </nav>
         </header>
 
@@ -24,7 +26,7 @@
             <p id="milo_text">Bonjour !</p>
         </div>
         <button id="play-audio-btn" type="button" style="display:none;">
-                <img id="btn-play" src="assets/icons/VOCAL-fond-noir.png" alt="ButtonPlay">
+            <img id="btn-play" src="assets/icons/VOCAL-fond-noir.png" alt="ButtonPlay">
         </button>
         <footer>
             <button id="button1" type="button">
@@ -45,5 +47,3 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="/front_voice/scripts/buttons.js"></script>
 <script src="/front_voice/scripts/audioPlay.js"></script>
-
-

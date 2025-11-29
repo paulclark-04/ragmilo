@@ -25,6 +25,7 @@ CREATE TABLE files (
     tags TEXT, -- JSON array of tags
     
     -- Processing status
+    status TEXT DEFAULT 'En attente', -- 'En attente', 'En traitement', 'Traite', 'Erreur'
     is_processed BOOLEAN DEFAULT FALSE,
     processing_date TIMESTAMP,
     chunk_count INTEGER DEFAULT 0,

@@ -346,8 +346,8 @@ def main():
                     print(f"Error processing {pdf_path}: {e}")
         
         # Export to vector_db.json format for compatibility
-        print("Exporting to vector_db.json...")
-        export_to_vector_db(db_manager, "vector_db.json")
+        print(f"Exporting to {args.output}...")
+        export_to_vector_db(db_manager, args.output)
         
         # Build indexes
         print("Building FAISS index...")

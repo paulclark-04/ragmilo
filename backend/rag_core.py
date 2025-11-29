@@ -24,7 +24,7 @@ except ImportError as exc:  # pragma: no cover
 
 DEFAULT_EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent / 'data'
 
 def tokenize(text: str) -> List[str]:
     pattern = re.compile(r"\b\w+\b", re.UNICODE)

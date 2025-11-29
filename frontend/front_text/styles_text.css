@@ -5,7 +5,7 @@
   --bg-dark: #101828;
   --bg-muted: #eef2f8;
   --border: #d0d7e3;
-  --accent: #2563eb;
+  --accent: #002A7C;
   --accent-soft: rgba(37, 99, 235, 0.08);
   --text-primary: #101828;
   --text-secondary: #475467;
@@ -48,16 +48,10 @@ body {
   align-items: center;
 }
 
-.logo {
+.logo-img {
   width: 52px;
-  height: 52px;
-  background: var(--bg-dark);
-  color: #fff;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  height: auto;
+  object-fit: contain;
 }
 
 .branding h1 {
@@ -200,12 +194,14 @@ input[type='number'] {
 }
 
 @keyframes bounce {
+
   0%,
   80%,
   100% {
     transform: translateY(0);
     opacity: 0.6;
   }
+
   40% {
     transform: translateY(-6px);
     opacity: 1;
@@ -283,7 +279,7 @@ input[type='number'] {
 
 .send-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 8px 18px rgba(#002A7C);
 }
 
 .empty-state {
@@ -355,4 +351,42 @@ input[type='number'] {
     align-items: flex-start;
     gap: 12px;
   }
+}
+
+.mode-switch {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+}
+
+.mode-switch a {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: rgba(0, 42, 124, 0.1);
+  /* bleu translucide */
+  border: 1px solid rgba(0, 42, 124, 0.25);
+  color: #002A7C;
+  /* bleu MILO */
+  transition: all 0.25s ease-out;
+  backdrop-filter: blur(4px);
+}
+
+.mode-switch a:hover {
+  background: #002A7C;
+  color: white;
+  box-shadow: 0 0 8px rgba(0, 42, 124, 0.6);
+  transform: translateY(-2px);
+}
+
+.mode-switch a.active {
+  background: #002A7C;
+  color: white;
+  border-color: #001a52;
 }

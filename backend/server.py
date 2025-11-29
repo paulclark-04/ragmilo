@@ -47,7 +47,7 @@ class QueryRequest(BaseModel):
     vector_k: int = 20
     bm25_k: int = 40
     embed_model: Optional[str] = None
-    llm_model: str = 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF'
+    llm_model: str = 'mistral:7b'
 
 
 class Query(BaseModel):
@@ -72,12 +72,28 @@ def build_prompt(retrieved_knowledge, threshold):
     context_block = '\n'.join(context_lines)
 
     instruction_prompt = (
-        "Tu es un assistant pédagogique ECE Paris. Réponds exclusivement en français clair et concis.\n"
-        "Utilise UNIQUEMENT les informations présentes dans les extraits ci-dessous.\n"
-        "Chaque affirmation doit être suivie de la citation de la forme [docid:page:index].\n"
-        "Ne crée ni exemples, ni équations, ni explications absents des extraits.\n"
-        f"Si tu ne trouves pas la réponse exacte, réponds: \"Information non trouvée dans les sources disponibles.\" (seuil {threshold}).\n\n"
-        f"Extraits autorisés:\n{context_block}\n"
+        "Tu es un assistant pédagogique ECE Paris. RÈGLES STRICTES (INTERDICTION ABSOLUE DE LES ENFREINDRE):\\n\\n"
+        
+        "✅ CE QUE TU DOIS FAIRE:\\n"
+        "1. Réponds UNIQUEMENT en français clair et concis\\n"
+        "2. Utilise EXCLUSIVEMENT les informations textuellement présentes dans les extraits ci-dessous\\n"
+        "4. Si l'information n'est PAS EXPLICITEMENT dans les extraits, dis EXACTEMENT : "
+        "\\\"Je ne trouve pas cette information dans les documents disponibles.\\\"\\n\\n"
+        
+        "❌ INTERDICTIONS ABSOLUES:\\n"
+        "1. NE génère JAMAIS de contenu qui n'est pas littéralement dans les extraits\\n"
+        "2. NE crée AUCUN exemple, équation, code, ou explication de ton propre chef\\n"
+        "3. NE fais AUCUNE déduction ou inférence au-delà du texte exact\\n"
+        "4. NE combine PAS d'informations de sources différentes pour créer des faits\\n"
+        "5. NE réponds JAMAIS si tu n'es pas sûr à 100% que c'est dans les extraits\\n"
+        
+        "⚠️ EN CAS DE DOUTE : Dis que tu ne sais pas. C'est PRÉFÉRABLE à une réponse incertaine.\\n\\n"
+        
+        f"EXTRAITS AUTORISÉS (seuil de confiance: {threshold}):\\n"
+        f"{context_block}\\n\\n"
+        
+        "RAPPEL : Si la réponse n'est pas EXPLICITEMENT et CLAIREMENT dans les extraits ci-dessus, "
+        "réponds : \\\"Je ne trouve pas cette information dans les documents disponibles.\\\""
     )
     return instruction_prompt
 
@@ -85,7 +101,7 @@ def build_prompt(retrieved_knowledge, threshold):
 @app.get('/api/metadata')
 def get_metadata():
     retr = ensure_retriever()
-    keys = ['matiere', 'enseignant', 'semestre', 'promo']
+    keys = ['matiere', 'sous_matiere', 'enseignant', 'semestre', 'promo']
     unique: Dict[str, set] = {k: set() for k in keys}
     records = []
     seen = set()
@@ -105,6 +121,15 @@ def get_metadata():
         'unique': {k: sorted(v) for k, v in unique.items()},
         'records': records,
     }
+
+
+@app.post('/api/reload')
+def reload_data():
+    """Force reload of RAG data"""
+    global retriever
+    retriever = None
+    print("[INFO] RAG Data reload requested.")
+    return {"message": "Data reload initiated"}
 
 
 @app.post('/api/ask')

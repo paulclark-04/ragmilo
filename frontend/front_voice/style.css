@@ -12,7 +12,7 @@ body {
 .container {
     background-color: rgb(255, 255, 255);
     border-radius: 20px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -72,7 +72,7 @@ main {
     font-style: normal;
 }
 
-#text-zone{
+#text-zone {
     font-family: 'MaPolice', Arial, sans-serif;
     font-size: larger;
     padding-bottom: 5vh;
@@ -97,7 +97,7 @@ footer {
 }
 
 button {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     border: none;
     height: 5vh;
     border-radius: 15px;
@@ -126,4 +126,43 @@ button:active {
     justify-content: center;
     align-items: center;
     cursor: pointer;
+}
+
+.mode-switch {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 20;
+}
+
+.mode-switch a {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    background: rgba(0, 42, 124, 0.1);
+    /* bleu translucide */
+    border: 1px solid rgba(0, 42, 124, 0.25);
+    color: #002A7C;
+    /* bleu MILO */
+    transition: all 0.25s ease-out;
+    backdrop-filter: blur(4px);
+}
+
+.mode-switch a:hover {
+    background: #002A7C;
+    color: white;
+    box-shadow: 0 0 8px rgba(0, 42, 124, 0.6);
+    transform: translateY(-2px);
+}
+
+.mode-switch a.active {
+    background: #002A7C;
+    color: white;
+    border-color: #001a52;
 }

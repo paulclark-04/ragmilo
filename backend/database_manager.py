@@ -12,7 +12,9 @@ from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "rag_database.db"):
+    def __init__(self, db_path: str = None):
+        if not db_path:
+            db_path = Path(__file__).parent.parent / "data" / "rag_database.db"
         self.db_path = Path(db_path)
         self.connection = None
         self._connect()

@@ -4,6 +4,8 @@ Provides web interface for managing files, classifications, and database operati
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -61,7 +63,8 @@ app.add_middleware(
 )
 
 # Setup templates
-templates = Jinja2Templates(directory="templates")
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Global database manager
 db_manager = None
@@ -94,7 +97,7 @@ async def shutdown_event():
 @app.get("/")
 async def root(request: Request):
     """Main file management interface"""
-    return templates.TemplateResponse("file_manager_rag.html", {"request": request})
+    return templates.TemplateResponse("file_manager.html", {"request": request})
 
 
 @app.get("/api/files")
@@ -177,8 +180,8 @@ async def upload_file(
             tag_list = [tag.strip() for t in tags.split(',') if t.strip()]
     
     # Save uploaded file
-    upload_dir = Path("uploads")
-    upload_dir.mkdir(exist_ok=True)
+    upload_dir = Path(__file__).parent.parent / "data" / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
     file_path = upload_dir / file.filename
 
     with open(file_path, "wb") as f:
@@ -204,23 +207,42 @@ async def upload_file(
         # 🧠 Define background function to run enhanced_ingest.py
         def process_in_background():
             try:
+                # Run as a module to ensure imports work correctly
+                # Define output paths in data directory
+                data_dir = Path(__file__).parent.parent / "data"
+                
                 cmd = [
-                    "python", "enhanced_ingest.py",
+                    sys.executable, "-m", "backend.enhanced_ingest",
                     "--pdf", str(file_path),
                     "--matiere", matiere,
                     "--sous_matiere", sous_matiere,
                     "--enseignant", enseignant,
                     "--promo", str(promo),
                     "--semestre", semestre,
-                    "--file_id", str(file_id)
+                    "--file_id", str(file_id),
+                    # Explicitly set output paths to data directory
+                    "--output", str(data_dir / "vector_db.json"),
+                    "--faiss-index", str(data_dir / "vector_index.faiss"),
+                    "--bm25-index", str(data_dir / "bm25_index.pkl"),
+                    "--meta-output", str(data_dir / "index_meta.json"),
+                    "--db-path", str(data_dir / "rag_database.db")
                 ]
-
-                print(f"[🚀] Processing {file.filename} (ID={file_id}) ...") #?? Pas sur pour l'ID A LA MANO
+                
+                print(f"[🚀] Processing {file.filename} (ID={file_id}) ...")
+                # Run from the current working directory (project root)
                 subprocess.run(cmd, check=True)
 
                 # ✅ Update status once processed
                 db.update_file_status(file_id, "traite")
                 print(f"[✅] File {file_id} processed successfully.")
+                
+                # 🔄 Trigger reload on main server
+                try:
+                    import requests
+                    requests.post("http://127.0.0.1:8000/api/reload", timeout=2)
+                    print("[🔄] Main server reload triggered.")
+                except Exception as e:
+                    print(f"[⚠️] Failed to trigger reload: {e}")
             except subprocess.CalledProcessError as e:
                 db.update_file_status(file_id, f"erreur: {e.returncode}")
                 print(f"[❌] Error processing file {file_id}: {e}")
