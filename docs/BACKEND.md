@@ -1,4 +1,4 @@
-# ECE Paris RAG Backend Documentation
+# ECE Paris RAG Documentation Backend
 
 ## 🎯 Vision & Principes
 
