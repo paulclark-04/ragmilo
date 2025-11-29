@@ -104,7 +104,7 @@ ragmilo/
 
 ### 4. Génération (`server.py`)
 - Chunks contextualisés : `[doc_id:page:index]`
-- Envoi au LLM Ollama avec instruction stricte
+- Envoi au LLM Mistral 7b avec instruction stricte
 - Format JSON : `answer`, `sources`, `confidence`, `metadata_used`, `retrieval_stats`
 
 ## 🚀 Utilisation
